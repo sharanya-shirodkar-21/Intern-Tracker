@@ -32,6 +32,7 @@ import {
   downloadCohortComprehensiveExcel,
   StudentDossier
 } from '@/lib/student-dossier';
+import CompletionAnalyticsGraph from '@/components/analytics/CompletionAnalyticsGraph';
 
 export default function CoordinatorDashboard() {
   const { storeState } = useAuth();
@@ -164,150 +165,11 @@ export default function CoordinatorDashboard() {
       </div>
 
       {/* 1. DATA VISUALIZATION: COMPLETED VS REMAINING */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-blue-700 dark:text-blue-400" />
-              <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                Cohort Progress & Completion Analytics
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Visualizing how many students have completed versus remaining in Course ET740 (8 Weeks).
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-900 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">
-              Avg Marks: {avgMarks} / 30
-            </span>
-          </div>
-        </div>
-
-        {/* Multi-Segment Visual Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-700 dark:text-slate-300">Cohort Completion Breakdown ({totalStudents} Students)</span>
-            <span className="text-emerald-700 dark:text-emerald-400">{completedCount} of {totalStudents} Completed ({completedPct}%)</span>
-          </div>
-
-          <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full flex overflow-hidden shadow-inner">
-            <div
-              style={{ width: `${completedPct}%` }}
-              className="bg-emerald-500 hover:bg-emerald-400 transition-all duration-500"
-              title={`Completed: ${completedCount} students (${completedPct}%)`}
-            />
-            <div
-              style={{ width: `${inProgressPct}%` }}
-              className="bg-blue-500 hover:bg-blue-400 transition-all duration-500"
-              title={`In Progress: ${inProgressCount} students (${inProgressPct}%)`}
-            />
-            <div
-              style={{ width: `${remainingPct}%` }}
-              className="bg-amber-400 hover:bg-amber-300 transition-all duration-500"
-              title={`Remaining / Needs Attention: ${remainingCount} students (${remainingPct}%)`}
-            />
-            <div
-              style={{ width: `${unregisteredPct}%` }}
-              className="bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 transition-all duration-500"
-              title={`Unregistered: ${unregisteredCount} students (${unregisteredPct}%)`}
-            />
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 pt-1 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="text-slate-700 dark:text-slate-300 font-medium">Completed: <b>{completedCount}</b> ({completedPct}%)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-blue-500" />
-              <span className="text-slate-700 dark:text-slate-300 font-medium">In Progress / On Track: <b>{inProgressCount}</b> ({inProgressPct}%)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-amber-400" />
-              <span className="text-slate-700 dark:text-slate-300 font-medium">Remaining / Pending Logs: <b>{remainingCount}</b> ({remainingPct}%)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-700" />
-              <span className="text-slate-700 dark:text-slate-300 font-medium">Unregistered: <b>{unregisteredCount}</b> ({unregisteredPct}%)</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 4 Deliverables KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-          {/* Card 1: 8 Weeks Logs */}
-          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-              All 8 Weeks Logs
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{allLogsCompletedCount} / {totalStudents}</span>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                {Math.round((allLogsCompletedCount / (totalStudents || 1)) * 100)}%
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {totalStudents - allLogsCompletedCount} students remaining
-            </p>
-          </div>
-
-          {/* Card 2: Certificates */}
-          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-              Completion Certificates
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{certificateCount} / {totalStudents}</span>
-              <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
-                {Math.round((certificateCount / (totalStudents || 1)) * 100)}%
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {totalStudents - certificateCount} certificates remaining
-            </p>
-          </div>
-
-          {/* Card 3: Final Reports */}
-          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-              Final Reports (B3)
-            </span>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{reportCount} / {totalStudents}</span>
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                {Math.round((reportCount / (totalStudents || 1)) * 100)}%
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              {totalStudents - reportCount} reports remaining
-            </p>
-          </div>
-
-          {/* Card 4: Offer Letters (Optional) */}
-          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                Offer Letters
-              </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                Optional
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{offerLetterCount} / {totalStudents}</span>
-              <span className="text-xs font-bold text-slate-500">
-                {Math.round((offerLetterCount / (totalStudents || 1)) * 100)}%
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Optional per college policy
-            </p>
-          </div>
-        </div>
-      </div>
+      <CompletionAnalyticsGraph
+        initialScope="all"
+        title="Department Cohort Completion & Remaining Analytics"
+        subtitle="Interactive visualization showing how many students have completed their internship versus remaining in Course ET740 (8 Weeks)."
+      />
 
       {/* 2. FILTER & SEARCH CONTROLS */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">

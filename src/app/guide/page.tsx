@@ -25,6 +25,7 @@ import { formatDate } from '@/lib/utils';
 import { Profile, Internship, WeeklyLog, LogEntry, GuideComment } from '@/types/database';
 import { downloadStudentDossierDocument, downloadStudentDossierExcel, getStudentDossierData } from '@/lib/student-dossier';
 import { Download, Award, FileSpreadsheet } from 'lucide-react';
+import CompletionAnalyticsGraph from '@/components/analytics/CompletionAnalyticsGraph';
 
 export default function GuideDashboardPage() {
   const { currentUser, storeState, refreshStore } = useAuth();
@@ -166,34 +167,16 @@ export default function GuideDashboardPage() {
         </Link>
       </div>
 
-      {/* Mentee Progress Analytics */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-            Assigned Mentees Completion Status ({myStudents.length} Students)
-          </span>
-          <span className="font-bold text-emerald-600 dark:text-emerald-400">
-            {menteesCompleted} Completed • {menteesInProgress} In Progress • {menteesRemaining} Remaining
-          </span>
-        </div>
-        <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full flex overflow-hidden">
-          <div
-            style={{ width: `${Math.round((menteesCompleted / (myStudents.length || 1)) * 100)}%` }}
-            className="bg-emerald-500"
-            title={`Completed: ${menteesCompleted}`}
-          />
-          <div
-            style={{ width: `${Math.round((menteesInProgress / (myStudents.length || 1)) * 100)}%` }}
-            className="bg-purple-500"
-            title={`In Progress: ${menteesInProgress}`}
-          />
-          <div
-            style={{ width: `${Math.round((menteesRemaining / (myStudents.length || 1)) * 100)}%` }}
-            className="bg-amber-400"
-            title={`Remaining: ${menteesRemaining}`}
-          />
-        </div>
-      </div>
+      {/* Comprehensive Completion & Remaining Analytics Graphs */}
+      <CompletionAnalyticsGraph
+        initialScope="my_mentees"
+        guideId={guide?.id}
+        title="Faculty Guide Completion & Progress Analytics"
+        subtitle="Interactive visualization showing how many assigned students completed their internship versus remaining deliverables."
+        onSelectStudent={(studentId) => {
+          setSelectedStudentId(studentId);
+        }}
+      />
 
       {/* Heatmap Section */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
