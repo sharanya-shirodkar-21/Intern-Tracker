@@ -1,0 +1,21 @@
+{
+  "name": "InternTrack - BE Sem VII Internship Portal",
+  "short_name": "InternTrack",
+  "description": "Don Bosco College of Engineering Course ET740 Internship Portal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F2942",
+  "theme_color": "#0F2942",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
