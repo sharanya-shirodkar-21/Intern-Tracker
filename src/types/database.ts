@@ -149,6 +149,20 @@ export interface Notification {
   created_at: string;
 }
 
+export interface StudentMarksEvaluation {
+  id: string;
+  student_id: string;
+  internship_id: string;
+  // Assessment criteria out of 30 marks
+  log_regularity_marks: number;       // Max 10: Weekly log timeliness & anti-backfill discipline
+  supervisor_verification_marks: number; // Max 10: Industry supervisor verification & workplace conduct
+  report_quality_marks: number;       // Max 10: Technical depth, final report & presentation quality
+  total_marks: number;                // Total out of 30
+  graded_by?: string;                 // Faculty guide or coordinator name
+  comments?: string;
+  updated_at: string;
+}
+
 export interface AuditLog {
   id: string;
   actor: string;

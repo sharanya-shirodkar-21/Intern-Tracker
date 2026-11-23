@@ -15,6 +15,7 @@ import {
   OutboxEmail,
   ShowcaseProfile,
   AtlasPost,
+  StudentMarksEvaluation,
 } from '@/types/database';
 
 // Cryptographic SHA-256 helper (browser & node compatible)
@@ -164,6 +165,7 @@ export interface AppState {
   outbox: OutboxEmail[];
   showcaseProfiles: ShowcaseProfile[];
   atlasPosts: AtlasPost[];
+  studentMarks: StudentMarksEvaluation[];
 }
 
 // Function to generate full seed state
@@ -554,6 +556,30 @@ export function getInitialSeedState(): AppState {
     },
   ];
 
+  // Continuous Assessment Marks out of 30 for all 30 students
+  const studentMarks: StudentMarksEvaluation[] = initialStudents.map((s, idx) => {
+    const hasIntern = idx < 26; // 26 registered, 4 unregistered
+    const isTop = idx < 6;      // Top 6 students (e.g. Aarav 29/30)
+    const isMid = idx >= 6 && idx < 20; // 22-26/30
+    const logM = hasIntern ? (isTop ? 10 : isMid ? 8 : 6) : 0;
+    const supM = hasIntern ? (isTop ? 10 : isMid ? 8 : 5) : 0;
+    const repM = hasIntern ? (isTop ? 9 : isMid ? 8 : 5) : 0;
+    return {
+      id: `marks-${s.id}`,
+      student_id: s.id,
+      internship_id: hasIntern ? (internships[idx]?.id || `intern-${idx + 1}`) : '',
+      log_regularity_marks: logM,
+      supervisor_verification_marks: supM,
+      report_quality_marks: repM,
+      total_marks: logM + supM + repM,
+      graded_by: 'Dr. Rajesh Sharma',
+      comments: hasIntern 
+        ? (isTop ? 'Exceptional engineering discipline and technical aptitude.' : 'Satisfactory progress across 8 weeks.')
+        : 'Internship pending registration.',
+      updated_at: '2024-08-30T10:00:00Z',
+    };
+  });
+
   return {
     profiles,
     guideAssignments,
@@ -571,11 +597,12 @@ export function getInitialSeedState(): AppState {
     outbox,
     showcaseProfiles,
     atlasPosts,
+    studentMarks,
   };
 }
 
 // Global Store Manager with reactive local persistence
-const STORAGE_KEY = 'INTERNTRACK_STATE_V3';
+const STORAGE_KEY = 'INTERNTRACK_STATE_V4';
 
 export class StoreManager {
   private static instance: StoreManager;
@@ -619,6 +646,7 @@ export class StoreManager {
             outbox: parsed.outbox || seed.outbox,
             showcaseProfiles: (parsed.showcaseProfiles && parsed.showcaseProfiles.length > 0) ? parsed.showcaseProfiles : seed.showcaseProfiles,
             atlasPosts: (parsed.atlasPosts && parsed.atlasPosts.length > 0) ? parsed.atlasPosts : seed.atlasPosts,
+            studentMarks: (parsed.studentMarks && parsed.studentMarks.length > 0) ? parsed.studentMarks : seed.studentMarks,
           };
         } catch (e) {
           console.error('Failed to parse stored state, falling back to seed', e);

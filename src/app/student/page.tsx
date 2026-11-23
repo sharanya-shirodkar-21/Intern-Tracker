@@ -19,6 +19,8 @@ import {
   Edit3
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { getStudentDossierData, downloadStudentDossierDocument, downloadStudentDossierExcel } from '@/lib/student-dossier';
+import { Award, Download } from 'lucide-react';
 
 export default function StudentHomePage() {
   const { currentUser, isHydrated, storeState } = useAuth();
@@ -93,15 +95,11 @@ export default function StudentHomePage() {
 
   // Supervisor link
   const supervisorLink = storeState.supervisorLinks.find((l) => l.internship_id === intern.id);
+  const dossier = student ? getStudentDossierData(student.id) : null;
+  const marks = dossier?.marks;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-      {currentUser?.role !== 'student' && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between shadow-sm">
-          <span>💡 <b>Preview Mode:</b> Viewing Student Portal for <b>{student?.name} ({student?.roll_no})</b> while currently logged in as {currentUser?.name} ({currentUser?.role}). Use the bottom-right <b>Demo Role Switcher</b> to change student or role.</span>
-        </div>
-      )}
-
       {/* "Where am I?" Hero Dashboard Card */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -136,6 +134,15 @@ export default function StudentHomePage() {
                 <FileText className="w-4 h-4 text-emerald-300" />
                 <span>Uploads & Mistake-Proofer</span>
               </Link>
+
+              <button
+                onClick={() => student && downloadStudentDossierDocument(student.id)}
+                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition"
+                title="Download full individual dossier with logs and assessment marks"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download My Dossier (.txt)</span>
+              </button>
             </div>
           </div>
 
@@ -258,6 +265,78 @@ export default function StudentHomePage() {
         </div>
       </div>
 
+      {/* Continuous Assessment Marks Card (Out of 30) */}
+      {marks && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Continuous Assessment Marks (Out of 30)
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Evaluated by faculty guide ({marks.graded_by}) based on log timeliness, supervisor seals, and report rigor.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <span className="text-2xl font-black text-blue-900 dark:text-blue-300">
+                  {marks.total_marks} / 30
+                </span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Score</span>
+              </div>
+              <button
+                onClick={() => student && downloadStudentDossierDocument(student.id)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-900 dark:bg-blue-600 text-white font-bold text-xs hover:bg-blue-800 transition shadow"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Assessment</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                1. Log Regularity & Discipline
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-lg font-black text-slate-900 dark:text-white">{marks.log_regularity_marks} / 10</span>
+                <span className="text-[10px] text-slate-500">Anti-Backfill On-Time</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                2. Industry Verification
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-lg font-black text-slate-900 dark:text-white">{marks.supervisor_verification_marks} / 10</span>
+                <span className="text-[10px] text-slate-500">Supervisor Seals</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                3. Technical Depth & Report
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-lg font-black text-slate-900 dark:text-white">{marks.report_quality_marks} / 10</span>
+                <span className="text-[10px] text-slate-500">Appendix B3 Quality</span>
+              </div>
+            </div>
+          </div>
+
+          {marks.comments && (
+            <p className="text-xs text-slate-600 dark:text-slate-300 bg-blue-50/50 dark:bg-blue-950/30 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/50">
+              💡 <b>Faculty Remark:</b> {marks.comments}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Profile & Credentials Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Company & Supervisor Details */}
@@ -338,8 +417,11 @@ export default function StudentHomePage() {
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <p className="font-bold text-slate-800 dark:text-slate-200">1. Offer Letter</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Due within Week 1 of start date</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-slate-800 dark:text-slate-200">1. Offer Letter</p>
+                    <span className="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 rounded font-semibold">Optional</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Optional — upload if issued by company</p>
                 </div>
               </div>
               {offerDoc ? (
@@ -347,8 +429,8 @@ export default function StudentHomePage() {
                   <CheckCircle2 className="w-3 h-3" /> Uploaded (v{offerDoc.version})
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
-                  Missing
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-300 dark:border-slate-700">
+                  Optional
                 </span>
               )}
             </div>

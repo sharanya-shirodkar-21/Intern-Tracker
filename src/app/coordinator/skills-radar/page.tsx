@@ -46,10 +46,8 @@ export default function SkillsAndRiskRadarPage() {
     if (!intern) {
       score += 40;
       reasons.push('Internship not yet registered');
-    } else if (!hasOffer) {
-      score += 30;
-      reasons.push('Offer letter missing after Week 1');
     }
+    // Note: Offer letter is optional per college policy (not all companies issue offer letters)
 
     if (lockedEmptyLogs.length > 0) {
       score += Math.min(lockedEmptyLogs.length * 25, 50);

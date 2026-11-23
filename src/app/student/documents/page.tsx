@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { DocumentRecord, DocumentType } from '@/types/database';
+import { downloadStudentDossierDocument, downloadStudentDossierExcel } from '@/lib/student-dossier';
 
 export default function StudentDocumentsPage() {
   const { currentUser, storeState, refreshStore } = useAuth();
@@ -130,6 +131,25 @@ export default function StudentDocumentsPage() {
             Store offer letters, completion certificates, and Appendix B3 final report with versioning and validation.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => student && downloadStudentDossierDocument(student.id)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-900 text-white font-bold text-xs shadow hover:bg-blue-800 transition"
+            title="Download full internship dossier with logs and assessment marks"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download My Dossier (.txt)</span>
+          </button>
+          <button
+            onClick={() => student && downloadStudentDossierExcel(student.id)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs shadow hover:bg-emerald-600 transition"
+            title="Download full Excel record with logs and marks"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download My Excel Record</span>
+          </button>
+        </div>
       </div>
 
       {successMessage && (
@@ -157,18 +177,21 @@ export default function StudentDocumentsPage() {
               </div>
               {offerDoc ? (
                 <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
-                  Version {offerDoc.version} Active
+                  Version {offerDoc.version} Uploaded
                 </span>
               ) : (
-                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
-                  Required
+                <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-300">
+                  Optional
                 </span>
               )}
             </div>
 
-            <h3 className="font-bold text-base text-slate-900">1. Offer Letter</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-base text-slate-900">1. Offer Letter</h3>
+              <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">Optional</span>
+            </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Official company offer or appointment letter. Due within the first week of the internship start date.
+              Official company offer or appointment letter (Optional — upload if provided by your company; not all organizations issue formal letters).
             </p>
 
             {offerDoc && (

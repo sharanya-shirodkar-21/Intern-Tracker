@@ -23,6 +23,8 @@ import {
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import { Profile, Internship, WeeklyLog, LogEntry, GuideComment } from '@/types/database';
+import { downloadStudentDossierDocument, downloadStudentDossierExcel, getStudentDossierData } from '@/lib/student-dossier';
+import { Download, Award, FileSpreadsheet } from 'lucide-react';
 
 export default function GuideDashboardPage() {
   const { currentUser, storeState, refreshStore } = useAuth();
@@ -49,6 +51,7 @@ export default function GuideDashboardPage() {
 
   // Selected student details
   const activeStudent = myStudents.find((s) => s.id === (selectedStudentId || myStudents[0]?.id));
+  const activeDossier = activeStudent ? getStudentDossierData(activeStudent.id) : null;
   const activeIntern = internships.find((i) => i.student_id === activeStudent?.id);
   const activeStudentLogs = activeIntern
     ? weeklyLogs.filter((w) => w.internship_id === activeIntern.id).sort((a, b) => a.week_no - b.week_no)
@@ -56,6 +59,12 @@ export default function GuideDashboardPage() {
   const activeWeek = activeStudentLogs.find((w) => w.week_no === selectedWeekNo) || activeStudentLogs[0];
   const activeEntries = activeWeek ? entries.filter((e) => e.weekly_log_id === activeWeek.id) : [];
   const activeComments = activeWeek ? comments.filter((c) => c.weekly_log_id === activeWeek.id) : [];
+
+  // Mentee completion counts
+  const menteeDossiers = myStudents.map((s) => getStudentDossierData(s.id)).filter(Boolean);
+  const menteesCompleted = menteeDossiers.filter((d) => d?.completionStatus === 'Completed').length;
+  const menteesInProgress = menteeDossiers.filter((d) => d?.completionStatus === 'In Progress').length;
+  const menteesRemaining = menteeDossiers.filter((d) => d?.completionStatus === 'Remaining' || d?.completionStatus === 'Unregistered').length;
 
   // Heatmap cell evaluator
   // Green = on time (3+ entries)
@@ -155,6 +164,35 @@ export default function GuideDashboardPage() {
           <PhoneCall className="w-3.5 h-3.5" />
           <span>Industry Contact Journal</span>
         </Link>
+      </div>
+
+      {/* Mentee Progress Analytics */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            Assigned Mentees Completion Status ({myStudents.length} Students)
+          </span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            {menteesCompleted} Completed • {menteesInProgress} In Progress • {menteesRemaining} Remaining
+          </span>
+        </div>
+        <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full flex overflow-hidden">
+          <div
+            style={{ width: `${Math.round((menteesCompleted / (myStudents.length || 1)) * 100)}%` }}
+            className="bg-emerald-500"
+            title={`Completed: ${menteesCompleted}`}
+          />
+          <div
+            style={{ width: `${Math.round((menteesInProgress / (myStudents.length || 1)) * 100)}%` }}
+            className="bg-purple-500"
+            title={`In Progress: ${menteesInProgress}`}
+          />
+          <div
+            style={{ width: `${Math.round((menteesRemaining / (myStudents.length || 1)) * 100)}%` }}
+            className="bg-amber-400"
+            title={`Remaining: ${menteesRemaining}`}
+          />
+        </div>
       </div>
 
       {/* Heatmap Section */}
@@ -258,12 +296,24 @@ export default function GuideDashboardPage() {
                     })}
 
                     <td className="py-2.5 px-4 text-right">
-                      <button
-                        onClick={() => setSelectedStudentId(s.id)}
-                        className="text-purple-700 hover:text-purple-900 font-bold text-[11px] hover:underline"
-                      >
-                        Inspect →
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadStudentDossierDocument(s.id);
+                          }}
+                          className="p-1 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition"
+                          title="Download Dossier (.txt)"
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setSelectedStudentId(s.id)}
+                          className="text-purple-700 dark:text-purple-400 hover:underline font-bold text-[11px]"
+                        >
+                          Inspect →
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -275,32 +325,76 @@ export default function GuideDashboardPage() {
 
       {/* Selected Student Deep-Dive Review Card */}
       {activeStudent && (
-        <div className="bg-white rounded-xl border shadow-sm p-6 space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-6">
           {/* Student Profile Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-slate-900">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">
                   {activeStudent.name} ({activeStudent.roll_no})
                 </h3>
-                <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">
+                <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-semibold">
                   Course ET740
                 </span>
+                {activeDossier && (
+                  <span className="text-xs font-black px-2.5 py-0.5 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
+                    Marks: {activeDossier.marks.total_marks} / 30
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {activeStudent.email} • {activeStudent.phone || 'No phone'} • Batch: {activeStudent.batch}
               </p>
             </div>
 
-            {activeIntern && (
-              <div className="text-right text-xs">
-                <span className="font-bold text-slate-800">{activeIntern.company_name}</span>
-                <p className="text-slate-500 text-[11px]">
-                  Supervisor: {activeIntern.supervisor_name} ({activeIntern.supervisor_designation})
-                </p>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => downloadStudentDossierDocument(activeStudent.id)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-900 dark:bg-blue-600 text-white font-bold text-xs shadow hover:bg-blue-800 transition"
+                title="Download full student dossier (.txt)"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Dossier</span>
+              </button>
+              <button
+                onClick={() => downloadStudentDossierExcel(activeStudent.id)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition"
+                title="Download student spreadsheet (.xlsx)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Download Excel</span>
+              </button>
+            </div>
           </div>
+
+          {/* Continuous Assessment Marks /30 */}
+          {activeDossier && (
+            <div className="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs uppercase tracking-wider text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-amber-500" />
+                  Continuous Evaluation Rubric (Total: {activeDossier.marks.total_marks} / 30)
+                </span>
+                <span className="text-xs text-purple-700 dark:text-purple-400 font-semibold">
+                  Evaluator: {guide.name}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 text-center border border-purple-100 dark:border-purple-900">
+                  <span className="text-[10px] text-slate-400 uppercase block">Log Regularity</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{activeDossier.marks.log_regularity_marks} / 10</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 text-center border border-purple-100 dark:border-purple-900">
+                  <span className="text-[10px] text-slate-400 uppercase block">Supervisor Seals</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{activeDossier.marks.supervisor_verification_marks} / 10</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 text-center border border-purple-100 dark:border-purple-900">
+                  <span className="text-[10px] text-slate-400 uppercase block">Report Quality</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{activeDossier.marks.report_quality_marks} / 10</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Week Selector for Feedback */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">

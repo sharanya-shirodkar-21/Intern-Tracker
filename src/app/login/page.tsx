@@ -96,7 +96,7 @@ export default function LoginPage() {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
                 <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                  1-Click Demo Persona Login
+                  Welcome to Internship Tracker
                 </h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
