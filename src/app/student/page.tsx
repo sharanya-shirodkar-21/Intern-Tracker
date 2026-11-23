@@ -16,7 +16,8 @@ import {
   UserCheck, 
   ExternalLink,
   Lock,
-  Edit3
+  Edit3,
+  Bell
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { getStudentDossierData, downloadStudentDossierDocument, downloadStudentDossierExcel } from '@/lib/student-dossier';
@@ -98,8 +99,50 @@ export default function StudentHomePage() {
   const dossier = student ? getStudentDossierData(student.id) : null;
   const marks = dossier?.marks;
 
+  // Check for recent nudges or notifications targeted exclusively to this student
+  const myNudges = student
+    ? storeState.notifications.filter(
+        (n) =>
+          n.user_id === student.id &&
+          (n.title.toLowerCase().includes('nudge') ||
+            n.title.toLowerCase().includes('reminder') ||
+            n.title.toLowerCase().includes('action required') ||
+            n.title.toLowerCase().includes('deliverables'))
+      )
+    : [];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      {/* Active Nudge / Alert Banner from Coordinator or Guide (Visible ONLY on THIS student's screen) */}
+      {myNudges.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-400 dark:border-amber-600 shadow-md flex items-start gap-4">
+          <div className="p-2.5 rounded-xl bg-amber-500 text-slate-950 shrink-0 shadow-sm">
+            <Bell className="w-5 h-5 animate-bounce" />
+          </div>
+          <div className="space-y-1 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <h3 className="text-sm font-black text-amber-900 dark:text-amber-200">
+                {myNudges[0].title}
+              </h3>
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 font-mono">
+                {new Date(myNudges[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <p className="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+              {myNudges[0].body}
+            </p>
+            <div className="pt-1 flex items-center gap-3 text-xs">
+              <Link
+                href="/outbox"
+                className="font-bold text-amber-900 dark:text-amber-200 underline hover:text-amber-700"
+              >
+                View full email notice in your mailbox &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* "Where am I?" Hero Dashboard Card */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">

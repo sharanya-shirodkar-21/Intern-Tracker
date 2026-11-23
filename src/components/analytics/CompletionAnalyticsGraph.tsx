@@ -55,8 +55,10 @@ export default function CompletionAnalyticsGraph({
   const isFacultyGuide = currentUser?.role === 'guide';
   const isCoordinator = currentUser?.role === 'coordinator';
 
+  // Strict role constraint: Mentors/Faculty Guides are strictly restricted to 'my_mentees'.
+  // Only the Internship Coordinator is permitted to view the whole 30-student cohort.
   const [scope, setScope] = useState<'my_mentees' | 'all'>(
-    isCoordinator ? 'all' : initialScope
+    isCoordinator ? 'all' : 'my_mentees'
   );
 
   // Active view tab: 'graphs' (Donut + Milestones) or 'list' (Detailed Student Matrix)
@@ -77,11 +79,12 @@ export default function CompletionAnalyticsGraph({
 
   const targetStudents = useMemo(() => {
     const allStudents = storeState.profiles.filter((p) => p.role === 'student');
-    if (scope === 'my_mentees' && assignedStudentIds.length > 0) {
+    // If user is a guide (not coordinator), ALWAYS lock strictly to assigned mentees!
+    if (!isCoordinator || scope === 'my_mentees') {
       return allStudents.filter((s) => assignedStudentIds.includes(s.id));
     }
     return allStudents;
-  }, [storeState.profiles, scope, assignedStudentIds]);
+  }, [storeState.profiles, isCoordinator, scope, assignedStudentIds]);
 
   // Compute full dossier records for target students
   const dossiers: StudentDossier[] = useMemo(() => {
@@ -254,6 +257,40 @@ export default function CompletionAnalyticsGraph({
     setTimeout(() => setNudgeSuccess(null), 4000);
   };
 
+  // Individual Student Nudge Action (Sends email & notification ONLY to that specific student)
+  const handleNudgeSingleStudent = (d: StudentDossier) => {
+    const store = StoreManager.getInstance();
+    const missing: string[] = [];
+    if (d.completedWeeksCount < 8) missing.push(`${8 - d.completedWeeksCount} weekly logs`);
+    if (!d.certificateDoc) missing.push('Completion Certificate');
+    if (!d.reportDoc) missing.push('Final Internship Report (B3)');
+
+    const missingText = missing.join(', ') || 'pending deliverables';
+    const sender = currentUser?.name || 'Internship Coordinator';
+
+    // In-app notification strictly for this student
+    store.addNotification(
+      d.student.id,
+      `Action Required from ${sender}: Internship Deliverables`,
+      `Dear ${d.student.name}, please complete your remaining ET740 requirements: ${missingText}.`,
+      '/student'
+    );
+
+    // Email to outbox strictly addressed to this student
+    store.addOutboxEmail(
+      d.student.email,
+      `InternTrack: Final Deliverables Reminder for ${d.student.name} (${d.student.roll_no || 'ET740'})`,
+      `<p>Dear ${d.student.name},<br/><br/>This is an official notification from <b>${sender}</b> regarding your ET740 BE Semester VII internship. Your records show the following items are still pending submission:<br/><b>${missingText}</b>.<br/><br/>Please log in to InternTrack immediately to submit your deliverables.</p>`,
+      'reminder'
+    );
+
+    store.saveState();
+    refreshStore();
+
+    setNudgeSuccess(`Nudge alert and email dispatched exclusively to ${d.student.name} (${d.student.email})!`);
+    setTimeout(() => setNudgeSuccess(null), 4000);
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors">
       {/* Top Banner / Controls */}
@@ -276,33 +313,39 @@ export default function CompletionAnalyticsGraph({
             </p>
           </div>
 
-          {/* Scope Toggle & Actions */}
+          {/* Scope Toggle & Actions: Mentors ONLY see their mentees. ONLY Coordinators can see the whole 30 students */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Scope Pill Toggle */}
-            <div className="inline-flex p-1 bg-slate-200/70 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setScope('my_mentees')}
-                className={`px-3 py-1.5 rounded-xl transition ${
-                  scope === 'my_mentees'
-                    ? 'bg-white dark:bg-slate-700 text-purple-900 dark:text-purple-300 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
-              >
-                My Mentees ({assignedStudentIds.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setScope('all')}
-                className={`px-3 py-1.5 rounded-xl transition ${
-                  scope === 'all'
-                    ? 'bg-white dark:bg-slate-700 text-blue-900 dark:text-blue-300 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
-              >
-                Department Cohort ({storeState.profiles.filter((p) => p.role === 'student').length})
-              </button>
-            </div>
+            {isCoordinator ? (
+              <div className="inline-flex p-1 bg-slate-200/70 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setScope('all')}
+                  className={`px-3 py-1.5 rounded-xl transition ${
+                    scope === 'all'
+                      ? 'bg-white dark:bg-slate-700 text-blue-900 dark:text-blue-300 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Department Cohort ({storeState.profiles.filter((p) => p.role === 'student').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScope('my_mentees')}
+                  className={`px-3 py-1.5 rounded-xl transition ${
+                    scope === 'my_mentees'
+                      ? 'bg-white dark:bg-slate-700 text-purple-900 dark:text-purple-300 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  My Mentees ({assignedStudentIds.length})
+                </button>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-200 dark:border-purple-800 text-xs font-bold text-purple-900 dark:text-purple-300 shadow-sm">
+                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span>My Assigned Mentees ({assignedStudentIds.length} Students)</span>
+              </div>
+            )}
 
             {/* Quick Nudge Button for Faculty */}
             <button
@@ -873,9 +916,20 @@ export default function CompletionAnalyticsGraph({
                             </span>
                           </td>
 
-                          {/* Individual Downloads */}
+                          {/* Individual Downloads & Direct Nudge */}
                           <td className="px-4 py-3.5 text-right">
                             <div className="inline-flex items-center gap-1.5 justify-end">
+                              {!isComplete && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleNudgeSingleStudent(d)}
+                                  title={`Send Deliverables Nudge directly to ${d.student.name} (${d.student.email})`}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/80 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-300 font-bold text-[10px] transition"
+                                >
+                                  <Send className="w-3 h-3" />
+                                  <span>Nudge</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => downloadStudentDossierDocument(d.student.id)}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -39,7 +39,33 @@ export function Navbar() {
     ? storeState.notifications.filter((n) => n.user_id === currentUser.id)
     : [];
   const unreadCount = notifications.filter((n) => !n.read_at).length;
-  const outboxCount = mounted ? storeState.outbox.length : 0;
+
+  // Filter outbox count strictly by user role so students and guides only see their own mail count
+  const outboxCount = useMemo(() => {
+    if (!mounted || !currentUser) return 0;
+    if (currentRole === 'coordinator') {
+      return storeState.outbox.length;
+    }
+    if (currentRole === 'student') {
+      return storeState.outbox.filter(
+        (m) => m.to.toLowerCase() === currentUser.email.toLowerCase()
+      ).length;
+    }
+    if (currentRole === 'guide') {
+      const myAssignments = storeState.guideAssignments.filter((a) => a.guide_id === currentUser.id);
+      const menteeIds = myAssignments.map((a) => a.student_id);
+      const menteeEmails = storeState.profiles
+        .filter((p) => menteeIds.includes(p.id))
+        .map((p) => p.email.toLowerCase());
+
+      return storeState.outbox.filter(
+        (m) =>
+          m.to.toLowerCase() === currentUser.email.toLowerCase() ||
+          menteeEmails.includes(m.to.toLowerCase())
+      ).length;
+    }
+    return 0;
+  }, [mounted, currentUser, currentRole, storeState.outbox, storeState.guideAssignments, storeState.profiles]);
 
   const handleLogout = () => {
     logout();
@@ -245,9 +271,9 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Role Navigation Bar (Visible on all screen sizes, scrollable if overflowing) */}
+      {/* Role Navigation Bar (Mobile only, hidden on desktop to avoid duplicate stacked panels) */}
       {mounted && currentUser && navLinks.length > 0 && (
-        <div className="bg-slate-50/95 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-inner">
+        <div className="lg:hidden bg-slate-50/95 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-inner">
           <div className="flex items-center gap-1.5 min-w-max mx-auto lg:mx-0">
             {navLinks.map((link) => {
               const Icon = link.icon;
